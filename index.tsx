@@ -9,8 +9,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs';
 
-// Initialize Gemini AI
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// AI instance is created per-call using the user-supplied API key
 
 
 // --- TYPES ---
@@ -235,7 +234,7 @@ const CommonCostsCalculator: React.FC<{ proposals: Proposal[] }> = ({ proposals 
     );
 };
 
-const PdfProposalExtractor: React.FC<{ onAddProposal: (extractedData: any) => void }> = ({ onAddProposal }) => {
+const PdfProposalExtractor: React.FC<{ onAddProposal: (extractedData: any) => void; apiKey: string }> = ({ onAddProposal, apiKey }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [error, setError] = useState('');
@@ -244,6 +243,10 @@ const PdfProposalExtractor: React.FC<{ onAddProposal: (extractedData: any) => vo
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
+        if (!apiKey) {
+            setError('Introduz uma Gemini API Key nas definições para usar esta funcionalidade.');
+            return;
+        }
 
         setIsLoading(true);
         setError('');
@@ -455,6 +458,7 @@ ${text}
 A sua resposta final deve ser UM ÚNICO objeto JSON que corresponda exatamente ao esquema. Não inclua texto adicional, explicações ou formatação markdown.`;
 
         try {
+            const ai = new GoogleGenAI({ apiKey });
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
@@ -1208,7 +1212,7 @@ const RepaymentAnalysis: React.FC<{ proposals: Proposal[] }> = ({ proposals }) =
     );
 };
 
-const Chat: React.FC<{ proposals: Proposal[]; onClose: () => void }> = ({ proposals, onClose }) => {
+const Chat: React.FC<{ proposals: Proposal[]; onClose: () => void; apiKey: string }> = ({ proposals, onClose, apiKey }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -1237,6 +1241,7 @@ ${JSON.stringify(proposals, null, 2)}
 Pergunta do Utilizador:
 ${input}`;
             
+            const ai = new GoogleGenAI({ apiKey });
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
@@ -1308,6 +1313,8 @@ const App = () => {
   const [clientName, setClientName] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [editingProposalId, setEditingProposalId] = useState<number | null>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
 
   const ranks = useMemo(() => {
@@ -1421,14 +1428,38 @@ const App = () => {
                     />
                 </div>
                 <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/nodeflow_icon.svg" alt="Nodeflow" style={{ height: '28px', width: '28px' }} />
+                  <img src={import.meta.env.BASE_URL + 'nodeflow_icon.svg'} alt="Nodeflow" style={{ height: '28px', width: '28px' }} />
                   Analisador de Propostas de Crédito Habitação
                 </h1>
                 <p>Adicione e compare propostas de diferentes bancos. Todos os valores na tabela são editáveis para que possa ajustar e simular.</p>
+                <div style={{ marginTop: '0.75rem' }}>
+                  {!showApiKeyInput && (
+                    <button
+                      onClick={() => setShowApiKeyInput(true)}
+                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.8rem', cursor: 'pointer', opacity: 0.7 }}
+                    >
+                      {apiKey ? '🔑 API Key configurada' : '🔑 Configurar Gemini API Key (para leitura de PDF e chat IA)'}
+                    </button>
+                  )}
+                  {showApiKeyInput && (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        type="password"
+                        placeholder="Cole aqui a sua Gemini API Key"
+                        value={apiKey}
+                        onChange={e => setApiKey(e.target.value)}
+                        style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem', width: '320px', maxWidth: '100%' }}
+                      />
+                      <button onClick={() => setShowApiKeyInput(false)} style={{ fontSize: '0.75rem', padding: '0.3rem 0.7rem', cursor: 'pointer' }}>
+                        {apiKey ? 'Guardar' : 'Cancelar'}
+                      </button>
+                    </div>
+                  )}
+                </div>
             </header>
             <main>
                 <CommonCostsCalculator proposals={proposals} />
-                <PdfProposalExtractor onAddProposal={handleAddProposal} />
+                <PdfProposalExtractor onAddProposal={handleAddProposal} apiKey={apiKey} />
                 <ComparisonTable 
                     proposals={proposals} 
                     ranks={ranks} 
@@ -1449,7 +1480,7 @@ const App = () => {
              </svg>
         </button>
 
-        {isChatOpen && <Chat proposals={proposals} onClose={() => setIsChatOpen(false)} />}
+        {isChatOpen && <Chat proposals={proposals} onClose={() => setIsChatOpen(false)} apiKey={apiKey} />}
     </>
   );
 };
