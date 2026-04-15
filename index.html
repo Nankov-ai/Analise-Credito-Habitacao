@@ -26,6 +26,11 @@
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
+    <!-- AI DISCLOSURE BANNER -->
+    <div id="aiBanner" style="background:#fefce8;border-bottom:1px solid #fde68a;padding:.45rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+      <span style="font-size:.65rem;color:#78716c;letter-spacing:.05em;line-height:1.5;font-family:sans-serif;"><strong style="color:#b45309;font-weight:600;">Aviso AI Act (UE) 2024/1689 · Art. 50</strong> — Esta aplicação utiliza inteligência artificial generativa (Gemini API). A análise é gerada automaticamente, tem carácter meramente informativo e <strong style="color:#b45309;">não constitui aconselhamento financeiro</strong>. As decisões de crédito são da responsabilidade exclusiva das instituições financeiras.</span>
+      <button onclick="this.parentElement.style.display='none'" aria-label="Fechar aviso" style="background:none;border:none;color:#a8a29e;cursor:pointer;font-size:.9rem;flex-shrink:0;">✕</button>
+    </div>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
